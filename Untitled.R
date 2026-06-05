@@ -870,27 +870,27 @@ ui <- fluidPage(
                                div(class="kpi-row",
                                    div(class="kpi-card",
                                        div(class="kpi-label", "GDP per capita"),
-                                       div(class="kpi-val c-blue", textOutput("kpi_gdp", inline=TRUE)),
+                                       div(class="kpi-val", textOutput("kpi_gdp", inline=TRUE)),
                                        div(class="kpi-sub", textOutput("kpi_gdp_sub", inline=TRUE))
                                    ),
                                    div(class="kpi-card",
                                        div(class="kpi-label", "Visoko obrazovani"),
-                                       div(class="kpi-val c-amber", textOutput("kpi_edu", inline=TRUE)),
+                                       div(class="kpi-val", textOutput("kpi_edu", inline=TRUE)),
                                        div(class="kpi-sub", "% radne snage (finale)")
                                    ),
                                    div(class="kpi-card",
                                        div(class="kpi-label", "Peak emigracija"),
-                                       div(class="kpi-val c-red", textOutput("kpi_emi", inline=TRUE)),
+                                       div(class="kpi-val", textOutput("kpi_emi", inline=TRUE)),
                                        div(class="kpi-sub", textOutput("kpi_emi_yr", inline=TRUE))
                                    ),
                                    div(class="kpi-card",
                                        div(class="kpi-label", "Kum. gubitak kadra"),
-                                       div(class="kpi-val c-purple", textOutput("kpi_cum", inline=TRUE)),
+                                       div(class="kpi-val", textOutput("kpi_cum", inline=TRUE)),
                                        div(class="kpi-sub", "tis. osoba (baseline)")
                                    ),
                                    div(class="kpi-card",
                                        div(class="kpi-label", "Zdravstvo"),
-                                       div(class="kpi-val c-green", textOutput("kpi_health", inline=TRUE)),
+                                       div(class="kpi-val", textOutput("kpi_health", inline=TRUE)),
                                        div(class="kpi-sub", "promjena vs. 2025 (baseline)")
                                    )
                                ),
