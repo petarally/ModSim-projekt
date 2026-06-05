@@ -115,7 +115,7 @@ sd_model <- function(time, state, parms) {
     edu_ratio <- E / (pop_total * 1e6 * 0.45)
     gdp_growth <- gdp_base_growth + edu_gdp_elasticity * (edu_ratio - edu_ratio_init) +
       eu_funds * 0.002
-    gdp_growth <- gdp_growth - brain_drain_penalty * (emi_flow / pmax(1, E)) * 50
+    gdp_growth <- gdp_growth - brain_drain_penalty * (emi_flow / pmax(1, E))
     dGDP    <- GDP * pmax(-0.05, pmin(0.10, gdp_growth))  # Cap growth between -5% and +10% per year
     health_emi <- emi_flow * health_share
     dH_qual <- -health_emi / (pop_total * 1e6) * 500 +
@@ -1087,7 +1087,10 @@ server <- function(input, output, session) {
   output$kpi_cum <- renderText({
     paste0(round(tail(base()$cum_emi,1),0),"k")
   })
-  
+  output$kpi_health <- renderText({
+    round(tail(base()$H_qual, 1), 3)
+  })
+
   # ── GDP main plot ────────────────────────────────────────────────────────
   output$plot_gdp <- renderPlotly({
     d <- sims(); p <- plot_ly()
