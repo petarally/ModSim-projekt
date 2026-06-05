@@ -1,15 +1,3 @@
-# ============================================================
-# BRAIN DRAIN SIMULATOR v2.0 — System Dynamics Model
-# EU Country Comparison: Education, Migration & GDP
-# ------------------------------------------------------------
-# NEW in v2: Calendar years (2025→), CSV/PNG export,
-#            Country comparison, Auto-generated conclusions,
-#            EU Funds slider, Animated replay
-# Model type : System Dynamics (Stock & Flow)
-# Method     : Runge-Kutta 4th order (deSolve)
-# Calibration: Eurostat 2023, World Bank, DZS
-# ============================================================
-
 library(shiny)
 library(deSolve)
 library(ggplot2)
@@ -118,7 +106,7 @@ sd_model <- function(time, state, parms) {
     gdp_growth <- gdp_growth - brain_drain_penalty * (emi_flow / pmax(1, E))
     dGDP    <- GDP * pmax(-0.05, pmin(0.10, gdp_growth))  # Cap growth between -5% and +10% per year
     health_emi <- emi_flow * health_share
-    dH_qual <- -health_emi / (pop_total * 1e6) * 500 +
+    dH_qual <- -health_emi / (pop_total * 1e6) * 50 +
       0.01 * (1.0 - H_qual) * (GDP / gdp_init)
     it_retention <- pmax(0, 1 - (emi_flow / pmax(1, E)) * it_sensitivity)
     dI_invest <- I_invest * (0.04 * it_retention - 0.02)
@@ -903,7 +891,7 @@ ui <- fluidPage(
                                    div(class="kpi-card",
                                        div(class="kpi-label", "Zdravstvo"),
                                        div(class="kpi-val c-green", textOutput("kpi_health", inline=TRUE)),
-                                       div(class="kpi-sub", "indeks kvalitete [0–1]")
+                                       div(class="kpi-sub", "promjena vs. 2025 (baseline)")
                                    )
                                ),
                                # Main GDP chart
@@ -1088,7 +1076,10 @@ server <- function(input, output, session) {
     paste0(round(tail(base()$cum_emi,1),0),"k")
   })
   output$kpi_health <- renderText({
-    round(tail(base()$H_qual, 1), 3)
+    h0  <- base()$H_qual[1]
+    h1  <- tail(base()$H_qual, 1)
+    pct <- (h1 / h0 - 1) * 100
+    paste0(ifelse(pct >= 0, "+", ""), round(pct, 1), "%")
   })
 
   # ── GDP main plot ────────────────────────────────────────────────────────
@@ -1364,14 +1355,18 @@ server <- function(input, output, session) {
     q1  <- quantile(final_gdps, 0.25)
     q3  <- quantile(final_gdps, 0.75)
     plot_ly(x=final_gdps, type="histogram",
-            marker=list(color="#1565c0", opacity=0.7), nbinsx=25) %>%
+            marker=list(color="#1565c0", opacity=0.7), nbinsx=25,
+            showlegend=FALSE) %>%
       plt_theme() %>%
       add_segments(x=med, xend=med, y=0, yend=18,
-                   line=list(color="#c0392b", width=2, dash="dash"), name="Medijan") %>%
+                   line=list(color="#c0392b", width=2, dash="dash"), name="Medijan",
+                   showlegend=FALSE) %>%
       add_segments(x=q1, xend=q1, y=0, yend=18,
-                   line=list(color="#e65100", width=1.5, dash="dot"), name="Q1") %>%
+                   line=list(color="#e65100", width=1.5, dash="dot"), name="Q1",
+                   showlegend=FALSE) %>%
       add_segments(x=q3, xend=q3, y=0, yend=18,
-                   line=list(color="#e65100", width=1.5, dash="dot"), name="Q3") %>%
+                   line=list(color="#e65100", width=1.5, dash="dot"), name="Q3",
+                   showlegend=FALSE) %>%
       layout(
         xaxis=list(title="Finalni GDP per capita (€)", tickprefix="€"),
         yaxis=list(title="Frekvencija (n=80)"),
