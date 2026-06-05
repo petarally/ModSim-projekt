@@ -183,11 +183,25 @@ plt_theme <- function(p, title=NULL) {
     paper_bgcolor="#ffffff", plot_bgcolor="#ffffff",
     font   = list(family="Inter, sans-serif", color="#3a4255", size=13),
     title  = if (!is.null(title)) list(text=title, font=list(size=13, color="#333"), x=0.02) else NULL,
-    xaxis  = list(gridcolor="#f0f2f5", zerolinecolor="#e0e4ec", tickfont=list(size=12)),
-    yaxis  = list(gridcolor="#f0f2f5", zerolinecolor="#e0e4ec", tickfont=list(size=12)),
-    legend = list(orientation="h", y=-0.22, font=list(size=12)),
-    margin = list(l=55, r=15, t=if (!is.null(title)) 45 else 20, b=55),
-    hoverlabel = list(font=list(family="Arial", size=13))
+    xaxis  = list(
+      title      = list(text="", standoff=0),
+      gridcolor  = "#f0f2f5",
+      zerolinecolor = "#e0e4ec",
+      tickfont   = list(size=12),
+      tickformat = "d",
+      tickangle  = 0
+    ),
+    yaxis  = list(
+      title     = list(text="", standoff=8),
+      gridcolor = "#f0f2f5",
+      zerolinecolor = "#e0e4ec",
+      tickfont  = list(size=12)
+    ),
+    legend = list(orientation="h", y=-0.18, x=0, font=list(size=11),
+                  bgcolor="rgba(255,255,255,0.85)", bordercolor="#e0e4ec", borderwidth=1),
+    margin = list(l=60, r=20, t=if (!is.null(title)) 40 else 16, b=60),
+    hoverlabel = list(font=list(family="Arial", size=13), bgcolor="#fff",
+                      bordercolor="#e0e4ec")
   )
 }
 
@@ -770,7 +784,7 @@ ui <- fluidPage(
   # ── HEADER ────────────────────────────────────────────────────────────────
   div(class="app-header",
       div(
-        tags$h1(HTML('Brain Drain Simulator <span class="v-badge">v2.0</span>')),
+        tags$h1(HTML('Brain Drain Simulator')),
         div(class="sub", "System Dynamics · Obrazovanje · Migracija · BDP · EU Fondovi")
       ),
       div(class="hdr-badges",
@@ -804,12 +818,21 @@ ui <- fluidPage(
           
           div(class="ctrl-section",
               div(class="ctrl-section-title", "Politika zadržavanja talenata"),
+              selectInput("policy_strength", "Paket politike",
+                          choices=c(
+                            "Bez intervencije"                          = "0",
+                            "Paket A — porezne olakšice (blago)"       = "0.3",
+                            "Paket B — plaće + subvencije (umjereno)"  = "0.6",
+                            "Paket C — strukturne reforme (snažno)"    = "0.8",
+                            "Maksimalne mjere (sve politike)"          = "1.0"
+                          ),
+                          selected="0.6", width="100%"),
               div(class="param-hint",
-                  HTML("<b>Što simulira?</b> Porezne olakšice za visoko obrazovane, povećanje plaća u javnom sektoru, stambene subvencije, digitalne nomadske vize.")
+                  HTML("<b>Paket A:</b> Porezne olakšice za visoko obrazovane.<br>
+                        <b>Paket B:</b> + povećanje plaća u javnom sektoru, stambene subvencije.<br>
+                        <b>Paket C:</b> + digitalne nomadske vize, strukturne reforme tržišta rada.<br>
+                        <b>Maksimalne mjere:</b> sve navedeno + EU kohezijska ulaganja u ljudski kapital.")
               ),
-              sliderInput("policy_strength", "Jačina politike",
-                          min=0, max=1, value=0.6, step=0.1, width="100%"),
-              div(class="scale-hint", "0 = bez mjera  ·  0.6 = umjerena  ·  1.0 = maksimalna"),
               sliderInput("policy_start_yr", "Početak primjene (godina)",
                           min=2025, max=2040, value=2028, step=1, sep="", width="100%"),
               div(class="scale-hint", "Raniji početak = dugoročno veći efekt")
@@ -1013,7 +1036,7 @@ server <- function(input, output, session) {
     eu     <- input$eu_funds
     ws     <- input$wage_sens
     eg     <- input$edu_gdp
-    ps     <- input$policy_strength
+    ps     <- as.numeric(input$policy_strength)
     list(
       baseline   = run_sd(cd, years, 0,   0,    eu, ws, eg),
       policy_now = run_sd(cd, years, ps,  ps_yr, eu, ws, eg),
@@ -1031,7 +1054,7 @@ server <- function(input, output, session) {
     eu    <- input$eu_funds
     ws    <- input$wage_sens
     eg    <- input$edu_gdp
-    ps    <- input$policy_strength
+    ps    <- as.numeric(input$policy_strength)
     list(
       baseline   = run_sd(cd2, years, 0,  0,    eu, ws, eg),
       policy_now = run_sd(cd2, years, ps, ps_yr, eu, ws, eg),
@@ -1068,50 +1091,56 @@ server <- function(input, output, session) {
   # ── GDP main plot ────────────────────────────────────────────────────────
   output$plot_gdp <- renderPlotly({
     d <- sims(); p <- plot_ly()
+    line_widths <- c(baseline=3, policy_now=2, policy_5y=2, optimistic=2)
+    line_dashes <- c(baseline="solid", policy_now="solid", policy_5y="dash", optimistic="dot")
     for (s in names(SCEN_COLS)) {
       df <- d[[s]]
       p <- add_trace(p, data=df, x=~year, y=~GDP,
                      type="scatter", mode="lines",
                      name=SCEN_LABELS[s],
-                     line=list(color=SCEN_COLS[s], width=ifelse(s=="baseline",2.5,1.8)),
-                     text=~paste0(SCEN_LABELS[s],"<br>",round(year),": €",format(round(GDP),big.mark=",")),
+                     line=list(color=SCEN_COLS[s],
+                               width=line_widths[s],
+                               dash=line_dashes[s]),
+                     text=~paste0("<b>",SCEN_LABELS[s],"</b><br>",
+                                  round(year),". godina<br>",
+                                  "€",format(round(GDP),big.mark=",")),
                      hoverinfo="text")
     }
     p %>% plt_theme() %>%
-      layout(xaxis=list(tickformat="d"),
-             yaxis=list(tickprefix="€", tickformat=","))
+      layout(yaxis=list(tickprefix="€", tickformat=","))
   })
-  
+
   # ── Education plot ───────────────────────────────────────────────────────
   output$plot_edu <- renderPlotly({
     d <- sims(); p <- plot_ly()
+    line_dashes <- c(baseline="solid", policy_now="solid", policy_5y="dash", optimistic="dot")
     for (s in names(SCEN_COLS)) {
       df <- d[[s]]
       p <- add_trace(p, data=df, x=~year, y=~edu_pct,
                      type="scatter", mode="lines", name=SCEN_LABELS[s],
-                     line=list(color=SCEN_COLS[s], width=1.8),
-                     text=~paste0(SCEN_LABELS[s],"<br>",round(year),": ",round(edu_pct,1),"%"),
+                     line=list(color=SCEN_COLS[s], width=2, dash=line_dashes[s]),
+                     text=~paste0("<b>",SCEN_LABELS[s],"</b><br>",
+                                  round(year),". godina<br>",
+                                  round(edu_pct,1),"% obrazovanih"),
                      hoverinfo="text")
     }
     p %>% plt_theme() %>%
-      layout(xaxis=list(tickformat="d"),
-             yaxis=list(ticksuffix="%"))
+      layout(yaxis=list(ticksuffix="%", title=list(text="% obrazovanih", font=list(size=12))))
   })
-  
+
   # ── Net migration ────────────────────────────────────────────────────────
   output$plot_netmig <- renderPlotly({
     df <- base()
     plot_ly(data=df, x=~year) %>%
       add_trace(y=~(immi_flow/1000), type="bar", name="Imigracija",
-                marker=list(color="#63992299")) %>%
+                marker=list(color="#27ae6066")) %>%
       add_trace(y=~(-emi_flow/1000), type="bar", name="Emigracija",
-                marker=list(color="#E24B4A99")) %>%
-      add_trace(y=~net_mig_k, type="scatter", mode="lines", name="Neto",
-                line=list(color="#1a1f2e", width=2)) %>%
+                marker=list(color="#e74c3c66")) %>%
+      add_trace(y=~net_mig_k, type="scatter", mode="lines", name="Neto migracija",
+                line=list(color="#1a1f2e", width=2.5)) %>%
       plt_theme() %>%
       layout(barmode="overlay",
-             xaxis=list(tickformat="d"),
-             yaxis=list(title="tis. osoba / god."))
+             yaxis=list(title=list(text="tis. osoba / god.", font=list(size=12))))
   })
   
   # ── COUNTRY COMPARISON tab ───────────────────────────────────────────────
@@ -1150,10 +1179,9 @@ server <- function(input, output, session) {
       }
     }
     p %>% plt_theme() %>%
-      layout(xaxis=list(tickformat="d"),
-             yaxis=list(tickprefix="€", tickformat=","))
+      layout(yaxis=list(tickprefix="€", tickformat=","))
   })
-  
+
   output$plot_comp_edu <- renderPlotly({
     s1 <- sims(); s2 <- sims2(); p <- plot_ly()
     p <- add_trace(p, data=s1$baseline, x=~year, y=~edu_pct,
@@ -1179,9 +1207,9 @@ server <- function(input, output, session) {
                      text=~paste0(input$country2," opt<br>",round(year),": ",round(edu_pct,1),"%"))
     }
     p %>% plt_theme() %>%
-      layout(xaxis=list(tickformat="d"), yaxis=list(ticksuffix="%"))
+      layout(yaxis=list(ticksuffix="%", title=list(text="% obrazovanih", font=list(size=12))))
   })
-  
+
   output$plot_comp_mig <- renderPlotly({
     s1 <- sims(); s2 <- sims2(); p <- plot_ly()
     p <- add_trace(p, data=s1$baseline, x=~year, y=~cum_emi,
@@ -1197,9 +1225,9 @@ server <- function(input, output, session) {
                      text=~paste0(input$country2,"<br>",round(year),": ",round(cum_emi,1),"k"), hoverinfo="text")
     }
     p %>% plt_theme() %>%
-      layout(xaxis=list(tickformat="d"), yaxis=list(title="Kum. emigracija (tis.)"))
+      layout(yaxis=list(title=list(text="Kum. emigracija (tis.)", font=list(size=12))))
   })
-  
+
   output$comp_table <- renderTable({
     cd1 <- COUNTRIES[[input$country1]]
     rows <- list(
@@ -1250,8 +1278,7 @@ server <- function(input, output, session) {
                      hoverinfo="text")
     }
     p %>% plt_theme() %>%
-      layout(xaxis=list(tickformat="d"),
-             yaxis=list(title="GDP razlika vs. baseline (€)", tickprefix="€"))
+      layout(yaxis=list(title=list(text="GDP razlika vs. baseline (€)", font=list(size=12)), tickprefix="€"))
   })
   
   output$plot_cumemi <- renderPlotly({
@@ -1264,10 +1291,9 @@ server <- function(input, output, session) {
                      text=~paste0(SCEN_LABELS[s],"<br>",round(year),": ",round(cum_emi,1),"k"), hoverinfo="text")
     }
     p %>% plt_theme() %>%
-      layout(xaxis=list(tickformat="d"),
-             yaxis=list(title="Kumulativna emigracija (tis.)"))
+      layout(yaxis=list(title=list(text="Kumulativna emigracija (tis.)", font=list(size=12))))
   })
-  
+
   output$plot_it <- renderPlotly({
     d <- sims(); p <- plot_ly()
     for (s in names(SCEN_COLS)) {
@@ -1278,15 +1304,15 @@ server <- function(input, output, session) {
                      text=~paste0(SCEN_LABELS[s],"<br>",round(year),": ",round(I_invest,2)), hoverinfo="text")
     }
     p %>% plt_theme() %>%
-      layout(xaxis=list(tickformat="d"))
+      layout(yaxis=list(title=list(text="IT investicijski indeks", font=list(size=12))))
   })
-  
+
   # ── CONCLUSIONS tab ──────────────────────────────────────────────────────
   conclusions_text <- reactive({
     generate_conclusions(
       sims(), input$country1, input$years - BASE_YEAR,
       input$policy_start_yr - BASE_YEAR,
-      input$eu_funds, input$policy_strength
+      input$eu_funds, as.numeric(input$policy_strength)
     )
   })
   
