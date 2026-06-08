@@ -259,17 +259,17 @@ generate_conclusions <- function(sims, country_name, years, policy_start,
     ), "\n\n",
     "### 2. Ekonomski rast — feedback između obrazovanja i BDP-a\n\n",
     sprintf(
-      "BDP per capita u baseline scenariju raste s **€%s** na **€%s** (prosječna godišnja stopa: %.2f%%). ",
+      "BDP per capita u baseline scenariju raste s **%s €** na **%s €** (prosječna godišnja stopa: %.2f%%). ",
       format(round(gdp_base_init), big.mark=","),
       format(round(gdp_base_final), big.mark=","),
       gdp_base_chg / years
     ),
     sprintf(
-      "Optimistični scenarij s punom politikom dostiže **€%s** (stopa %.2f%% godišnje). ",
+      "Optimistični scenarij s punom politikom dostiže **%s €** (stopa %.2f%% godišnje). ",
       format(round(gdp_opt_final), big.mark=","), gdp_opt_chg / years
     ),
     sprintf(
-      "Razlika između aktivne politike i baseline scenarija iznosi **€%s per capita** do %d.",
+      "Razlika između aktivne politike i baseline scenarija iznosi **%s € per capita** do %d.",
       format(round(gdp_gain_pol), big.mark=","), end_year
     ), "\n\n",
     eu_txt, "\n\n",
@@ -1055,7 +1055,7 @@ server <- function(input, output, session) {
   
   # ── KPIs ────────────────────────────────────────────────────────────────
   output$kpi_gdp <- renderText({
-    paste0("€", format(round(tail(base()$GDP,1)), big.mark=","))
+    paste0(format(round(tail(base()$GDP,1)), big.mark=","), " €")
   })
   output$kpi_gdp_sub <- renderText({
     b <- base(); pct <- (tail(b$GDP,1)/b$GDP[1]-1)*100
@@ -1097,11 +1097,11 @@ server <- function(input, output, session) {
                                dash=line_dashes[s]),
                      text=~paste0("<b>",SCEN_LABELS[s],"</b><br>",
                                   round(year),". godina<br>",
-                                  "€",format(round(GDP),big.mark=",")),
+                                  format(round(GDP),big.mark=",")," €"),
                      hoverinfo="text")
     }
     p %>% plt_theme() %>%
-      layout(yaxis=list(tickprefix="€", tickformat=","))
+      layout(yaxis=list(ticksuffix=" €", tickformat=","))
   })
 
   # ── Education plot ───────────────────────────────────────────────────────
@@ -1160,7 +1160,7 @@ server <- function(input, output, session) {
                      type="scatter", mode="lines", name=paste0(input$country1," ",SCEN_LABELS[sc]),
                      line=list(color=SCEN_COLS[sc], width=2,
                                dash=ifelse(sc=="baseline","solid","dash")),
-                     text=~paste0(input$country1," ",SCEN_LABELS[sc],"<br>",round(year),": €",format(round(GDP),big.mark=",")),
+                     text=~paste0(input$country1," ",SCEN_LABELS[sc],"<br>",round(year),": ",format(round(GDP),big.mark=",")," €"),
                      hoverinfo="text")
     }
     if (!is.null(s2)) {
@@ -1168,12 +1168,12 @@ server <- function(input, output, session) {
         p <- add_trace(p, data=s2[[sc]], x=~year, y=~GDP,
                        type="scatter", mode="lines", name=paste0(input$country2," ",SCEN_LABELS[sc]),
                        line=list(color=SCEN_COLS[sc], width=2, dash=ifelse(sc=="baseline","dot","dashdot")),
-                       text=~paste0(input$country2," ",SCEN_LABELS[sc],"<br>",round(year),": €",format(round(GDP),big.mark=",")),
+                       text=~paste0(input$country2," ",SCEN_LABELS[sc],"<br>",round(year),": ",format(round(GDP),big.mark=",")," €"),
                        hoverinfo="text")
       }
     }
     p %>% plt_theme() %>%
-      layout(yaxis=list(tickprefix="€", tickformat=","))
+      layout(yaxis=list(ticksuffix=" €", tickformat=","))
   })
 
   output$plot_comp_edu <- renderPlotly({
@@ -1268,11 +1268,11 @@ server <- function(input, output, session) {
                      fillcolor=paste0(substr(SCEN_COLS[s],1,7),"22"),
                      name=SCEN_LABELS[s],
                      line=list(color=SCEN_COLS[s], width=2),
-                     text=paste0(SCEN_LABELS[s],"<br>",round(df$year[1:n]),": +€",round(dg)),
+                     text=paste0(SCEN_LABELS[s],"<br>",round(df$year[1:n]),": +",round(dg)," €"),
                      hoverinfo="text")
     }
     p %>% plt_theme() %>%
-      layout(yaxis=list(title=list(text="GDP razlika vs. baseline (€)", font=list(size=12)), tickprefix="€"))
+      layout(yaxis=list(title=list(text="GDP razlika vs. baseline (€)", font=list(size=12)), ticksuffix=" €"))
   })
   
   output$plot_cumemi <- renderPlotly({
@@ -1368,14 +1368,14 @@ server <- function(input, output, session) {
                    line=list(color="#e65100", width=1.5, dash="dot"), name="Q3",
                    showlegend=FALSE) %>%
       layout(
-        xaxis=list(title="Finalni GDP per capita (€)", tickprefix="€"),
+        xaxis=list(title="Finalni GDP per capita (€)", ticksuffix=" €"),
         yaxis=list(title="Frekvencija (n=80)"),
         annotations=list(
-          list(x=med, y=16, text=paste0("Medijan: €",format(round(med),big.mark=",")),
+          list(x=med, y=16, text=paste0("Medijan: ",format(round(med),big.mark=",")," €"),
                showarrow=FALSE, font=list(size=12, color="#c0392b")),
-          list(x=q1, y=12, text=paste0("Q1: €",format(round(q1),big.mark=",")),
+          list(x=q1, y=12, text=paste0("Q1: ",format(round(q1),big.mark=",")," €"),
                showarrow=FALSE, font=list(size=12, color="#e65100"), xanchor="right"),
-          list(x=q3, y=12, text=paste0("Q3: €",format(round(q3),big.mark=",")),
+          list(x=q3, y=12, text=paste0("Q3: ",format(round(q3),big.mark=",")," €"),
                showarrow=FALSE, font=list(size=12, color="#e65100"), xanchor="left")
         )
       )
@@ -1391,13 +1391,13 @@ server <- function(input, output, session) {
     cols <- ifelse(df_comp$country==sel, "#1565c0", "rgba(55,138,221,0.28)")
     plot_ly(data=df_comp, x=~gdp, y=~reorder(country,gdp),
             type="bar", orientation="h",
-            marker=list(color=cols), text=~paste0("€",format(gdp,big.mark=",")),
+            marker=list(color=cols), text=~paste0(format(gdp,big.mark=",")," €"),
             textposition="outside",
-            hovertext=~paste0(country,"<br>GDP: €",format(gdp,big.mark=","),
+            hovertext=~paste0(country,"<br>GDP: ",format(gdp,big.mark=",")," €",
                               "<br>Emi: ",emi,"‰  |  Edu: ",round(edu,1),"%" ),
             hoverinfo="text") %>%
       plt_theme() %>%
-      layout(xaxis=list(title="GDP per capita (EUR PPS)", tickprefix="€"),
+      layout(xaxis=list(title="GDP per capita (EUR PPS)", ticksuffix=" €"),
              yaxis=list(title="", tickfont=list(size=12)),
              margin=list(l=130,r=60))
   })
